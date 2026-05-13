@@ -317,6 +317,7 @@
     let activeToken = 0; // prevents stale hide callbacks
     let streak = 0;
 
+    // Builds the static 3x3 board once and wires each hole click to whack().
     function createBoard() {
       board.innerHTML = "";
       holes = [];
@@ -337,6 +338,7 @@
       }
     }
 
+    // Picks a random hole index and avoids repeating the current active hole when possible.
     function randomIndex(exclude = -1) {
       let idx;
       do {
@@ -345,6 +347,7 @@
       return idx;
     }
 
+    // Activates one mole, including optional golden state, and schedules auto-hide.
     function showRandomMole() {
       if (!gameRunning) return;
 
@@ -376,6 +379,7 @@
       }, visibleFor);
     }
 
+    // Handles scoring for a click and guards against double-count on same mole.
     function whack(index) {
       if (!gameRunning) return;
       const hole = holes[index];
@@ -404,6 +408,7 @@
         : "Nice hit!";
     }
 
+    // Resets state and starts spawn + countdown loops.
     function startGame() {
       stopGame(false);
 
@@ -440,6 +445,7 @@
       }, 1000);
     }
 
+    // Stops loops and finalizes UI state when game ends or restarts.
     function stopGame(finished) {
       clearInterval(spawnTimer);
       clearInterval(countdownTimer);

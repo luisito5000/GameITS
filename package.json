@@ -1,0 +1,26 @@
+{
+  "name": "games",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test",
+    "lint": "npx --yes htmlhint@latest Game.html",
+    "ci": "npm run lint && npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/luisito5000/GameITS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/luisito5000/GameITS/issues"
+  },
+  "homepage": "https://github.com/luisito5000/GameITS#readme",
+  "devDependencies": {
+    "jsdom": "^29.1.1"
+  }
+}
