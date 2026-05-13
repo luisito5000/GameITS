@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Whac-A-Mole</title>
+  <style>
+    :root {
+      --bg1: #f8f7f2;
+      --bg2: #e7f3dc;
+      --accent: #2f7d32;
+      --accent-dark: #1f5b22;
+      --text: #1e1e1e;
+      --panel: #ffffffd9;
+      --danger: #b23a48;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 20%, #fff8cc 0%, transparent 30%),
+        radial-gradient(circle at 85% 80%, #d6f5d6 0%, transparent 35%),
+        linear-gradient(140deg, var(--bg1), var(--bg2));
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+    }
+
+    .game {
+      width: min(560px, 100%);
+      background: var(--panel);
+      border: 2px solid #d7e6cb;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px #0000001a;
+      padding: 1rem 1rem 1.25rem;
+    }
+
+    h1 {
+      margin: 0 0 0.75rem;
+      text-align: center;
+      letter-spacing: 0.5px;
+    }
+
+    .hud {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #dfebd6;
+      border-radius: 12px;
+      padding: 0.65rem 0.5rem;
+      text-align: center;
+    }
+
+    .label {
+      display: block;
+      font-size: 0.78rem;
+      opacity: 0.75;
+      margin-bottom: 0.2rem;
+    }
+
+    .value {
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    #score {
+      color: var(--accent-dark);
+      font-size: 1.6rem;
+    }
+
+    #timer.low {
+      color: var(--danger);
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.7rem;
+      margin-bottom: 1rem;
+    }
+
+    .hole {
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 14px;
+      border: 2px solid #c9d9bd;
+      background: linear-gradient(180deg, #e6f2de, #d3e8c3);
+      cursor: pointer;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .hole::after {
+      content: "";
+      position: absolute;
+      inset: auto 16% 8% 16%;
+      height: 28%;
+      border-radius: 999px;
+      background: #8b5a2b;
+      box-shadow: inset 0 4px 8px #00000033;
+    }
+
+    .mole {
+      position: absolute;
+      left: 50%;
+      bottom: -58%;
+      transform: translateX(-50%);
+      width: 58%;
+      height: 58%;
+      border-radius: 50% 50% 45% 45%;
+      background: #6d4c41;
+      border: 3px solid #56392f;
+      transition: bottom 120ms ease;
+      pointer-events: none;
+    }
+
+    .mole::before,
+    .mole::after {
+      content: "";
+      position: absolute;
+      top: 34%;
+      width: 9px;
+      height: 9px;
+      background: #fff;
+      border-radius: 50%;
+    }
+
+    .mole::before { left: 26%; }
+    .mole::after  { right: 26%; }
+
+    .hole.active .mole {
+      bottom: 23%;
+    }
+
+    .hole.golden .mole {
+      background: #d5a31a;
+      border-color: #9b7312;
+      box-shadow: 0 0 12px #d5a31a88;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 0.62rem 0.95rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+    }
+
+    button:hover { filter: brightness(1.05); }
+    button.secondary { background: #5a6f58; }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .status {
+      text-align: center;
+      margin-top: 0.75rem;
+      min-height: 1.2rem;
+      font-weight: 600;
+    }
+
+    .report {
+      margin-top: 1rem;
+      border-top: 1px solid #cfdeca;
+      padding-top: 0.8rem;
+    }
+
+    .report h2 {
+      margin: 0 0 0.6rem;
+      font-size: 1.02rem;
+    }
+
+    .prompt-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .prompt-card {
+      background: #fff;
+      border: 1px solid #d9e8d0;
+      border-radius: 12px;
+      padding: 0.65rem;
+      font-size: 0.84rem;
+      line-height: 1.35;
+    }
+
+    .prompt-card h3 {
+      margin: 0 0 0.35rem;
+      font-size: 0.9rem;
+    }
+
+    .prompt-card strong {
+      color: #204d22;
+    }
+
+    @media (max-width: 520px) {
+      .hud {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>Whac-A-Mole</h1>
+
+    <section class="hud">
+      <div class="card">
+        <span class="label">Score</span>
+        <span id="score" class="value">0</span>
+      </div>
+      <div class="card">
+        <span class="label">Time Left</span>
+        <span id="timer" class="value">30</span>
+      </div>
+      <div class="card">
+        <span class="label">Best</span>
+        <span id="best" class="value">0</span>
+      </div>
+      <div class="card">
+        <span class="label">Streak</span>
+        <span id="streak" class="value">0</span>
+      </div>
+    </section>
+
+    <section id="board" class="board" aria-label="Game board"></section>
+
+    <div class="controls">
+      <button id="startBtn">Start Game</button>
+      <button id="restartBtn" class="secondary" disabled>Restart</button>
+    </div>
+
+    <div id="status" class="status">Press Start to play.</div>
+
+    <section class="report" aria-label="Prompt engineering evidence">
+      <h2>Prompt Engineering: Before vs After</h2>
+      <div class="prompt-grid">
+        <article class="prompt-card">
+          <h3>Core 1: Role Prompting</h3>
+          <p><strong>Before:</strong> "Make a game."</p>
+          <p><strong>After:</strong> "You are a senior front-end game developer. Build a browser Whac-A-Mole game."</p>
+          <p><strong>Result:</strong> Cleaner architecture and clearer variable naming.</p>
+        </article>
+        <article class="prompt-card">
+          <h3>Core 2: Constraint Prompting</h3>
+          <p><strong>Before:</strong> "Add scoring and timing."</p>
+          <p><strong>After:</strong> "Use a 3x3 grid, 30-second timer, score +1 per hit, vanilla HTML/CSS/JS only."</p>
+          <p><strong>Result:</strong> Output matched required specs without extra libraries.</p>
+        </article>
+        <article class="prompt-card">
+          <h3>Core 3: Few-Shot Structure</h3>
+          <p><strong>Before:</strong> "Style the interface nicely."</p>
+          <p><strong>After:</strong> "Follow this format: HUD cards on top, board in middle, controls below."</p>
+          <p><strong>Result:</strong> Predictable layout and easier UI validation.</p>
+        </article>
+        <article class="prompt-card">
+          <h3>Extra Technique: Iterative Refinement</h3>
+          <p><strong>Before:</strong> One-shot prompt only.</p>
+          <p><strong>After:</strong> "Now add a Golden Mole worth +3 points and a visible streak counter."</p>
+          <p><strong>Result:</strong> New feature integrated successfully into gameplay loop.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const GRID_SIZE = 9;          // 3x3 board
+    const GAME_DURATION = 30;     // seconds
+    const SPAWN_INTERVAL = 700;   // ms between mole spawns
+    const MOLE_VISIBLE_MIN = 350; // ms
+    const MOLE_VISIBLE_MAX = 900; // ms
+    const GOLDEN_CHANCE = 0.2;    // 20% chance a spawned mole is golden
+    const GOLDEN_POINTS = 3;
+
+    const board = document.getElementById("board");
+    const scoreEl = document.getElementById("score");
+    const timerEl = document.getElementById("timer");
+    const bestEl = document.getElementById("best");
+    const streakEl = document.getElementById("streak");
+    const statusEl = document.getElementById("status");
+    const startBtn = document.getElementById("startBtn");
+    const restartBtn = document.getElementById("restartBtn");
+
+    let holes = [];
+    let score = 0;
+    let bestScore = 0;
+    let timeLeft = GAME_DURATION;
+    let gameRunning = false;
+    let spawnTimer = null;
+    let countdownTimer = null;
+    let activeHoleIndex = -1;
+    let activeToken = 0; // prevents stale hide callbacks
+    let streak = 0;
+
+    function createBoard() {
+      board.innerHTML = "";
+      holes = [];
+
+      for (let i = 0; i < GRID_SIZE; i++) {
+        const hole = document.createElement("button");
+        hole.className = "hole";
+        hole.type = "button";
+        hole.setAttribute("aria-label", `Hole ${i + 1}`);
+
+        const mole = document.createElement("span");
+        mole.className = "mole";
+        hole.appendChild(mole);
+
+        hole.addEventListener("click", () => whack(i));
+        board.appendChild(hole);
+        holes.push(hole);
+      }
+    }
+
+    function randomIndex(exclude = -1) {
+      let idx;
+      do {
+        idx = Math.floor(Math.random() * holes.length);
+      } while (holes.length > 1 && idx === exclude);
+      return idx;
+    }
+
+    function showRandomMole() {
+      if (!gameRunning) return;
+
+      if (activeHoleIndex >= 0) {
+        holes[activeHoleIndex].classList.remove("active");
+      }
+
+      const idx = randomIndex(activeHoleIndex);
+      activeHoleIndex = idx;
+      activeToken += 1;
+      const tokenAtSpawn = activeToken;
+
+      holes[idx].dataset.hit = "0";
+      holes[idx].dataset.golden = Math.random() < GOLDEN_CHANCE ? "1" : "0";
+      holes[idx].classList.add("active");
+      holes[idx].classList.toggle("golden", holes[idx].dataset.golden === "1");
+
+      const visibleFor =
+        Math.floor(Math.random() * (MOLE_VISIBLE_MAX - MOLE_VISIBLE_MIN + 1)) + MOLE_VISIBLE_MIN;
+
+      setTimeout(() => {
+        if (!gameRunning) return;
+        if (tokenAtSpawn !== activeToken) return; // newer mole is already active
+        holes[idx].classList.remove("active");
+        holes[idx].classList.remove("golden");
+        activeHoleIndex = -1;
+        streak = 0;
+        streakEl.textContent = streak;
+      }, visibleFor);
+    }
+
+    function whack(index) {
+      if (!gameRunning) return;
+      const hole = holes[index];
+      if (!hole.classList.contains("active")) return;
+      if (hole.dataset.hit === "1") return;
+
+      hole.dataset.hit = "1";
+      hole.classList.remove("active");
+      hole.classList.remove("golden");
+      activeHoleIndex = -1;
+
+      const isGolden = hole.dataset.golden === "1";
+      score += isGolden ? GOLDEN_POINTS : 1;
+      scoreEl.textContent = score;
+
+      streak += 1;
+      streakEl.textContent = streak;
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestEl.textContent = bestScore;
+      }
+
+      statusEl.textContent = isGolden
+        ? `Golden hit! +${GOLDEN_POINTS} points`
+        : "Nice hit!";
+    }
+
+    function startGame() {
+      stopGame(false);
+
+      gameRunning = true;
+      score = 0;
+      streak = 0;
+      timeLeft = GAME_DURATION;
+      activeHoleIndex = -1;
+      activeToken = 0;
+
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+      timerEl.textContent = timeLeft;
+      timerEl.classList.remove("low");
+      statusEl.textContent = "Whack as many moles as you can. Golden moles give bonus points!";
+
+      startBtn.disabled = true;
+      restartBtn.disabled = false;
+
+      showRandomMole();
+      spawnTimer = setInterval(showRandomMole, SPAWN_INTERVAL);
+
+      countdownTimer = setInterval(() => {
+        timeLeft -= 1;
+        timerEl.textContent = timeLeft;
+
+        if (timeLeft <= 5) {
+          timerEl.classList.add("low");
+        }
+
+        if (timeLeft <= 0) {
+          stopGame(true);
+        }
+      }, 1000);
+    }
+
+    function stopGame(finished) {
+      clearInterval(spawnTimer);
+      clearInterval(countdownTimer);
+      spawnTimer = null;
+      countdownTimer = null;
+
+      holes.forEach(h => h.classList.remove("active"));
+      holes.forEach(h => h.classList.remove("golden"));
+      activeHoleIndex = -1;
+      gameRunning = false;
+
+      if (finished) {
+        statusEl.textContent = `Time's up! Final score: ${score}`;
+        startBtn.disabled = false;
+      }
+    }
+
+    startBtn.addEventListener("click", startGame);
+    restartBtn.addEventListener("click", startGame);
+
+    createBoard();
+  </script>
+</body>
+</html>
